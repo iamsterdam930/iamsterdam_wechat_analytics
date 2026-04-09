@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iamsterdam 公众号数据分析报告</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f7f8fc;
+    --card: #ffffff;
+    --card2: #f2f4fa;
+    --accent: #4f6ef7;
+    --accent2: #f06292;
+    --accent3: #26b88a;
+    --accent4: #f5a623;
+    --accent5: #e8404a;
+    --accent6: #7c4dff;
+    --text: #1a1d2e;
+    --text2: #6b7080;
+    --text3: #9499ab;
+    --border: #e4e8f0;
+    --shadow: 0 2px 12px rgba(30,40,90,0.07);
+    --shadow-md: 0 4px 24px rgba(30,40,90,0.10);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg2); color: var(--text); font-family: 'PingFang SC','Helvetica Neue',Arial,sans-serif; line-height: 1.65; font-size: 15px; }
+
+  /* HEADER */
+  .header {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 52px 48px 40px;
+    position: relative; overflow: hidden;
+  }
+  .header::after {
+    content: '';
+    position: absolute; top: 0; right: 0;
+    width: 380px; height: 100%;
+    background: linear-gradient(120deg, transparent 0%, rgba(79,110,247,0.04) 100%);
+    pointer-events: none;
+  }
+  .header-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .header h1 { font-size: 30px; font-weight: 800; color: var(--text); margin-bottom: 8px; letter-spacing: -0.5px; }
+  .header p { color: var(--text2); font-size: 15px; }
+  .header-meta { display: flex; gap: 28px; margin-top: 20px; flex-wrap: wrap; }
+  .header-meta span { font-size: 13px; color: var(--text3); }
+  .header-meta strong { color: var(--text2); font-weight: 600; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px 60px; }
+
+  /* KPI */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; margin-bottom: 40px; }
+  .kpi-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 18px;
+    box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .kpi-card.c1::before { background: var(--accent); }
+  .kpi-card.c2::before { background: var(--accent2); }
+  .kpi-card.c3::before { background: var(--accent3); }
+  .kpi-card.c4::before { background: var(--accent4); }
+  .kpi-card.c5::before { background: var(--accent5); }
+  .kpi-label { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 0.5px; margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1.1; }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+  .kpi-extra { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 4px; }
+
+  /* SECTION */
+  .section { margin-bottom: 48px; }
+  .section-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px; }
+  .section-title { font-size: 17px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .section-title::before { content: ''; width: 4px; height: 18px; background: var(--accent); border-radius: 2px; flex-shrink: 0; }
+  .section-desc { font-size: 13px; color: var(--text3); }
+
+  /* CHART CARDS */
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .chart-grid.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .chart-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-card.w3 { grid-column: span 3; }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 16px; }
+  .chart-sub { font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+  /* INSIGHT-TEXT block (used before charts) */
+  .insight-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 26px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.85;
+  }
+  .insight-block strong { color: var(--text); }
+  .insight-block .highlight { font-weight: 700; color: var(--text); }
+
+  /* NLM pair cards - NotebookLM summary style */
+  .nlm-pair-group { margin-bottom: 32px; }
+  .nlm-group-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 20px;
+    display: inline-block; margin-bottom: 14px;
+  }
+  .nlm-group-label.win { background: rgba(38,184,138,0.12); color: #26b88a; }
+  .nlm-group-label.lose { background: rgba(232,64,74,0.08); color: #e8404a; }
+
+  .nlm-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto;
+    align-items: center;
+    gap: 16px;
+  }
+  .nlm-card:last-child { margin-bottom: 0; }
+
+  .nlm-card-topic {
+    font-size: 14px; font-weight: 700; color: var(--text);
+    line-height: 1.4;
+  }
+  .nlm-card-meta {
+    font-size: 11px; color: var(--text3); margin-top: 4px;
+  }
+
+  .nlm-card-vs {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    min-width: 80px;
+  }
+  .nlm-vs-label {
+    font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 0.5px;
+  }
+  .nlm-vs-values {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nlm-val {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .nlm-val-num {
+    font-size: 22px; font-weight: 800; line-height: 1;
+  }
+  .nlm-val-num.orig { color: var(--accent); }
+  .nlm-val-num.nlm { color: var(--accent3); }
+  .nlm-val-lbl {
+    font-size: 10px; color: var(--text3); margin-top: 2px;
+  }
+  .nlm-vs-sep {
+    font-size: 11px; color: var(--text3); font-weight: 600;
+  }
+
+  .nlm-card-ratio {
+    text-align: center; min-width: 72px;
+  }
+  .nlm-ratio-num {
+    font-size: 28px; font-weight: 800; line-height: 1;
+  }
+  .nlm-ratio-num.up { color: #26b88a; }
+  .nlm-ratio-num.down { color: #e8404a; }
+  .nlm-ratio-lbl {
+    font-size: 10px; color: var(--text3); margin-top: 3px; font-weight: 600;
+  }
+  .nlm-ratio-note {
+    font-size: 10px; color: var(--text3); margin-top: 4px; max-width: 80px; text-align: center; line-height: 1.3;
+  }
+
+  /* Efficiency tier cards */
+  .eff-tier { margin-bottom: 24px; }
+  .eff-tier:last-child { margin-bottom: 0; }
+  .eff-tier-label {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 5px 14px; border-radius: 20px; display: inline-block; margin-bottom: 10px;
+  }
+  .eff-tier-label.high { background: rgba(38,184,138,0.12); color: #26b88a; }
+  .eff-tier-label.mid { background: rgba(245,166,35,0.12); color: #f5a623; }
+  .eff-tier-label.low { background: rgba(232,64,74,0.08); color: #e8404a; }
+  .eff-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 10px; }
+  .eff-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .eff-card-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  .eff-card-stats { display: flex; gap: 12px; margin-bottom: 8px; }
+  .eff-stat { display: flex; flex-direction: column; }
+  .eff-stat-val { font-size: 15px; font-weight: 800; color: var(--text); line-height: 1.1; }
+  .eff-stat-val.green { color: #26b88a; }
+  .eff-stat-val.red { color: #e8404a; }
+  .eff-stat-val.orange { color: #f5a623; }
+  .eff-stat-lbl { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .eff-card-range { display: flex; gap: 8px; font-size: 11px; color: var(--text3); border-top: 1px solid var(--border); padding-top: 8px; }
+  .eff-range-item { display: flex; gap: 4px; }
+  .eff-range-label { color: var(--text3); }
+  .eff-range-val { font-weight: 600; color: var(--text2); }
+
+  /* INSIGHT CARDS */
+  .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+  .insight-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  .insight-card.accent { border-color: #c7d3fd; background: #f5f7ff; }
+  .insight-card.full { grid-column: 1 / -1; }
+  .insight-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+    padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
+  }
+  .tag-blue { background: #eef1ff; color: var(--accent); }
+  .tag-red  { background: #fef0f0; color: var(--accent5); }
+  .tag-green{ background: #edfaf5; color: var(--accent3); }
+  .tag-gray { background: #f2f4f8; color: var(--text3); }
+  .tag-purple { background: #f2eeff; color: var(--accent6); }
+  .tag-orange { background: #fff8ed; color: var(--accent4); }
+  .insight-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+  .insight-body { font-size: 13px; color: var(--text2); line-height: 1.75; }
+  .insight-body strong { color: var(--text); font-weight: 700; }
+  .insight-body em { color: var(--accent); font-style: normal; font-weight: 600; }
+
+  /* NLM COMPARE TABLE */
+  .compare-wrap { overflow-x: auto; }
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .compare-table th { padding: 9px 14px; text-align: left; border-bottom: 2px solid var(--border); color: var(--text3); font-weight: 600; font-size: 11px; letter-spacing: 0.5px; white-space: nowrap; }
+  .compare-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table tr:hover td { background: #fafbff; }
+  .tag-nlm { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+  .tag-nlm.orig { background: #f2f4f8; color: var(--text3); }
+  .tag-nlm.ai   { background: #eef1ff; color: var(--accent); }
+  .up   { color: var(--accent3); font-weight: 700; }
+  .down { color: var(--text3); }
+  .num  { font-weight: 700; color: var(--text); }
+
+  /* TOP TABLE */
+  .top-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .top-table th { padding: 9px 14px; border-bottom: 2px solid var(--border); color: var(--text3); font-weight: 600; font-size: 11px; letter-spacing: 0.5px; text-align: left; }
+  .top-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .top-table tr:last-child td { border-bottom: none; }
+  .top-table tr:hover td { background: #fafbff; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .b-tip   { background: #eef1ff; color: var(--accent); }
+  .b-food  { background: #fff8ed; color: var(--accent4); }
+  .b-travel{ background: #edfaf5; color: var(--accent3); }
+  .b-mkt   { background: #f2eeff; color: var(--accent6); }
+  .b-photo { background: #fef0f5; color: var(--accent2); }
+  .b-other { background: #f2f4f8; color: var(--text3); }
+  .b-ai    { background: #e8f5e9; color: #2e7d32; }
+  .rank { font-size: 12px; font-weight: 800; color: var(--text3); }
+  .rank.top3 { color: var(--accent4); }
+  .bar-mini { display: inline-block; height: 5px; border-radius: 3px; vertical-align: middle; margin-right: 5px; background: var(--accent); opacity: 0.35; }
+
+  /* FOOTER */
+  .footer { text-align: center; padding: 28px; color: var(--text3); font-size: 12px; border-top: 1px solid var(--border); background: #fff; }
+
+  /* callout */
+  .callout {
+    background: #f5f7ff; border-left: 4px solid var(--accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 14px 18px; margin-bottom: 20px;
+    font-size: 13px; color: var(--text2); line-height: 1.7;
+  }
+  .callout strong { color: var(--text); }
+
+  @media (max-width: 900px) {
+    .chart-grid, .chart-grid.three, .insights-grid { grid-template-columns: 1fr; }
+    .chart-card.full, .insight-card.full, .chart-card.w3 { grid-column: 1; }
+    .kpi-grid { grid-template-columns: repeat(3,1fr); }
+    .header { padding: 32px 20px; }
+    .container { padding: 24px 16px 48px; }
+    .nlm-card { grid-template-columns: 1fr; gap: 12px; text-align: center; }
+    .nlm-card-vs { justify-content: center; }
+    .nlm-card-ratio { display: flex; align-items: center; gap: 8px; justify-content: center; }
+    .nlm-ratio-note { display: none; }
+  }
+  @media (max-width: 600px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">WeChat Official Account · Data Analysis Report · AI Content Strategy</div>
+  <h1>iamsterdam 公众号数据分析报告</h1>
+  <p>STUDIO VoE · 全量历史数据洞察 · 聚焦 AI 辅助创作策略</p>
+  <div class="header-meta">
+    <span>数据截止 <strong>2026 年 4 月 8 日</strong></span>
+    <span>运营周期 <strong>2020.12 — 2026.04</strong></span>
+    <span>生成日期 <strong>2026 年 4 月 9 日</strong></span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- KPI -->
+  <div class="kpi-grid">
+    <div class="kpi-card c1">
+      <div class="kpi-label">累计发文</div>
+      <div class="kpi-value">460</div>
+      <div class="kpi-sub">历时约 65 个月</div>
+      <div class="kpi-extra">约 4.2 天/篇</div>
+    </div>
+    <div class="kpi-card c2">
+      <div class="kpi-label">累计阅读</div>
+      <div class="kpi-value">74,749</div>
+      <div class="kpi-sub">单篇最高 14,438</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-label">当前粉丝</div>
+      <div class="kpi-value">1,081</div>
+      <div class="kpi-sub">2025 年起加速增长</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-label">AI 辅助文章</div>
+      <div class="kpi-value">30篇</div>
+      <div class="kpi-sub">同类标签内对比：旅行游记 AI版 +71%；攻略类 原创高9×</div>
+    </div>
+    <div class="kpi-card c5">
+      <div class="kpi-label">阅读-涨粉相关</div>
+      <div class="kpi-value">r = 0.86</div>
+      <div class="kpi-sub">r = 月阅读量与月新增粉丝的皮尔逊相关系数（0~1，越接近1越强）</div>
+      <div class="kpi-extra">结论：爆款传播是涨粉核心驱动力</div>
+    </div>
+  </div>
+
+  <!-- 写公众号文章的核心数据支撑 -->
+  <div class="callout">
+    <strong>写作视角：</strong>本报告聚焦"AI辅助公众号创作"主题，着重呈现 ① NotebookLM 总结版 vs 原版旅行日记的阅读对比；② 旅行攻略类「原创 vs AI辅助」的分层表现；③ AI 工具在内容效率与粉丝增长中的真实作用。
+  </div>
+
+  <!-- 核心洞察 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">核心数据洞察</div>
+    </div>
+    <div class="insights-grid">
+
+      <div class="insight-card accent">
+        <div class="insight-tag tag-blue">🚀 爆款规律</div>
+        <div class="insight-title">8 篇旅行攻略 = 全站 37% 阅读量</div>
+        <div class="insight-body">
+          旅行游记（攻略类）仅 <strong>8 篇</strong>，贡献总阅读 <strong>27,785</strong>，占全站 <strong>37.2%</strong>。
+          单篇均阅读 <strong>3,473</strong>，是全站均值的 21 倍，是 MarTech 笔记的 84 倍。
+          "实用攻略"是这个账号最稳定的爆款公式。
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-tag tag-red">⚠️ 内容效率失衡</div>
+        <div class="insight-title">68% 的发文只贡献了 18% 的阅读</div>
+        <div class="insight-body">
+          <strong>MarTech/AI读书笔记</strong>（204篇，占44%）+ <strong>摄影图集</strong>（110篇，占24%）
+          合计 314 篇，阅读贡献仅 <strong>18.5%</strong>。
+          这两类内容对粉丝粘性有价值，但不是拉新引擎。
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-tag tag-green">✅ 2025 年是质变元年</div>
+        <div class="insight-title">均阅读提升 14×，新增粉丝提升 5×</div>
+        <div class="insight-body">
+          2025 年均阅读从 50.5 → <strong>726.2</strong>（+1338%），新增粉丝 <strong>521 人</strong>（前 4 年合计约 385 人）。
+          触发因素：<strong>旅行攻略系列上线</strong>（8月）+ <strong>美食系列上线</strong>（11月），两类内容共贡献 2025 年 90% 的阅读量。
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-tag tag-purple">🤖 同类内容下：AI 辅助的真实价值</div>
+        <div class="insight-title">旅行游记类 AI 版高 71%；攻略类 AI 版反而低 89%</div>
+        <div class="insight-body">
+          全量对比会因内容结构失衡而失真（AI 文章恰好集中在高阅读标签）。<strong>同标签下对比</strong>才更公平：<br>
+          • <strong>旅行游记（非攻略）</strong>：AI 版（10篇）均阅读 <strong>401.8</strong> vs 原创（28篇）<strong>234.8</strong>，AI 高出 <strong>+71%</strong>——NLM 的"攻略化改写"提升了可读性<br>
+          • <strong>旅行游记（攻略类）</strong>：原创（4篇）均阅读 <strong>6,252</strong> vs AI 版（4篇）<strong>694</strong>，原创高出 <strong>9×</strong>——一手体验不可替代<br>
+          • <strong>MarTech/AI读书笔记</strong>：非AI（196篇）均阅读 <strong>42.6</strong> vs AI辅助（8篇）<strong>8.6</strong>，AI 版更低——说明 AI 改写笔记类并不增值
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-tag tag-orange">🍳 美食内容：意外第二强</div>
+        <div class="insight-title">均阅读 480，Top 15 中占 5 席</div>
+        <div class="insight-body">
+          美食烹饪 38 篇，均阅读 <strong>479.7</strong>，是全站第二高效类型。
+          《白菜炖豆腐（vegan版）》6,712 阅读、《煎鸡腿排（快手版）》5,125 阅读，
+          均非 AI 辅助。内容特征与旅行攻略一致：<strong>实用、场景强、易转发</strong>。
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-tag tag-blue">📝 旅行游记 AI 版反超原创</div>
+        <div class="insight-title">NotebookLM 总结版均阅读高于原版日记</div>
+        <div class="insight-body">
+          旅行游记（非攻略类）中，AI 辅助版 10 篇均阅读 <strong>401.8</strong>，
+          原创版 28 篇均阅读 <strong>234.8</strong>，AI 版高 <strong>71%</strong>。
+          说明 NotebookLM 将游记重新整理为"攻略化"输出后，读者接受度反而更高。
+        </div>
+      </div>
+
+      <div class="insight-card full">
+        <div class="insight-tag tag-purple">🔮 写公众号文章的核心论点</div>
+        <div class="insight-title">AI 的价值在于"内容复用"而非"内容创造"——数据说话</div>
+        <div class="insight-body">
+          从数据看，AI 工具（NotebookLM 等）在这个账号里发挥了三类价值：
+          <strong>① 旧内容二次分发</strong>——把过去的游记重新整理成攻略格式，部分文章阅读量超过原版；
+          <strong>② 内容密度提升</strong>——NotebookLM 系列在 2026 年 2-3 月密集发布 13 篇，月均发文量从 6 篇提升到 10+ 篇；
+          <strong>③ 但替代不了原创爆款</strong>——旅行攻略原创版（均阅读 6,252）是 AI 版（694）的 9 倍，真正的"病毒传播"来自一手体验与独家视角，这是 AI 工具目前无法复制的。
+          <strong>最终公式：原创核心内容 × AI 分发复用 = 内容规模与质量兼得。</strong>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- NLM 原版对比 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">NotebookLM 总结版 vs 原版旅行日记</div>
+    </div>
+    <div class="insight-block">
+      <strong>核心规律：</strong>原版阅读量越低，NLM 版超越的可能性越大——
+      原版 <strong>100~300</strong> 阅读的游记，NLM 攻略化后最高提升 <strong>2.77×</strong>；
+      原版本身是爆款（<strong>3000+</strong> 阅读）的，NLM 版只能达到原版的 <strong>27~36%</strong>。
+      NLM 的价值是「激活沉睡内容」，而非「复制爆款」。
+    </div>
+    <div id="nlmCardsContainer"></div>
+  </div>
+
+  <!-- 旅行攻略：原创 vs AI 细分 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">旅行攻略类：人工原创 vs AI 辅助</div>
+    </div>
+    <div class="insight-block">
+      <strong>核心发现：</strong>同一主题下，AI 版（NLM）能否超越原版，取决于原版的阅读量——
+      原版 <strong>3000+</strong> 阅读的爆款，NLM 版只能达到 <strong>27~36%</strong>；
+      原版 <strong>100~300</strong> 阅读的中等文章，NLM 版最高可提升 <strong>2.77×</strong>。
+      爆款的本质是「一手体验 + 独家视角」，这是 AI 无法复制的。
+    </div>
+    <div id="tipCompareCards"></div>
+  </div>
+
+  <!-- 年度趋势 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">年度内容与粉丝趋势</div>
+    </div>
+    <div class="insight-block">
+      <strong>2025 年是质变元年：</strong>均阅读从 50.5 跃升至 <strong>726.2</strong>（提升 <strong>14×</strong>），
+      但 2025 年发文仅 <strong>63 篇</strong>，数量并不突出——爆发来自<strong>内容结构转型</strong>：
+      旅行攻略系列（8月）+ 美食系列（11月）贡献了全年 <strong>90%</strong> 的阅读量。
+      这一逻辑在 2026 年延续：均阅读 <strong>243</strong>，驱动来自 NLM 旅行内容系列。
+    </div>
+    <div class="chart-card full">
+      <div class="chart-title">各年均阅读量（括号内为发文数）</div>
+      <canvas id="chartYrRead" height="160"></canvas>
+    </div>
+  </div>
+
+  <!-- 内容效率 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">内容分类效率分析</div>
+    </div>
+    <div class="insight-block">
+      用「均阅读量」衡量内容效率，不同标签差距极大（<strong>71 倍</strong>）。
+      <span style="color:#26b88a;font-weight:700">高效区</span>：旅行攻略（均阅读 3,473）、美食（480）—— 实用+场景感强，天然高转发；
+      <span style="color:#f5a623;font-weight:700">中效区</span>：旅行游记（279）、Agentic产品转型（199）—— 有受众但体量小；
+      <span style="color:#e8404a;font-weight:700">低效区</span>：摄影图集、MarTech读书笔记、VoE、年度总结——发文量大但平台推荐效率低。
+    </div>
+    <div id="effCardsContainer"></div>
+  </div>
+
+  <!-- 粉丝增长 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">粉丝增长趋势</div>
+    </div>
+    <div class="insight-block">
+      <strong>2025 年 11 月出现拐点</strong>（单月新增 <strong>231 人</strong>），直接原因是旅行攻略系列的高阅读量驱动了朋友圈转发和平台推荐。
+      月度新增与总阅读量相关性极高（<strong>r=0.859</strong>），说明<strong>爆款传播是涨粉的核心驱动力</strong>，而非发文频率。
+      2020-2024 年年均净增约 <strong>60~120 人</strong>，2025 年全年净增 <strong>494 人</strong>（往年的 4~8 倍），2026 年至今已净增 <strong>179 人</strong>。
+    </div>
+    <div class="chart-card full">
+      <div class="chart-title">月度粉丝累积与新增（近 28 个月）</div>
+      <canvas id="chartFanGrowth" height="160"></canvas>
+    </div>
+  </div>
+
+  <!-- AI 对比 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">AI 辅助 vs 非 AI 创作对比（同类标签内）</div>
+    </div>
+    <div class="insight-block">
+      <strong>AI 工具的价值因内容类型而截然不同：</strong><br>
+      旅行<span class="highlight">游记</span>中，AI 版（NLM）均阅读比原创高 <strong>+71%</strong>——NLM 把日记重整为攻略格式，提升了实用性与可转发性；
+      旅行<span class="highlight">攻略</span>中，原创是 AI 版的 <strong>9 倍</strong>——真正的爆款来自一手体验与独家视角，AI 是复用工具，不是爆款发动机；
+      MarTech/AI读书笔记不参与此类对比，该类主要靠朋友圈传播，AI 辅助节省的是创作时间而非提升传播效能。
+    </div>
+    <div class="chart-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="chart-card">
+        <div class="chart-title">旅行游记（非攻略类）<span style="font-size:11px;color:#9499ab;margin-left:6px">原创28篇 vs AI辅助10篇</span></div>
+        <canvas id="chartAITravel" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">旅行游记（攻略类）<span style="font-size:11px;color:#9499ab;margin-left:6px">原创4篇 vs AI辅助4篇</span></div>
+        <canvas id="chartAITip" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top 15 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">历史 Top 15 文章</div>
+    </div>
+    <div class="chart-card">
+      <table class="top-table" id="topTable"></table>
+    </div>
+  </div>
+
+  <!-- 对话系列 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">「对话」系列全部文章</div>
+      <div class="section-desc">聚焦 AI 与营销/产品领域的深度对谈，共 8 篇</div>
+    </div>
+    <div class="chart-card">
+      <table class="top-table" id="dialogueTable"></table>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  iamsterdam 公众号数据分析报告 · STUDIO VoE · 数据来源：微信公众平台 · 生成于 2026年4月9日
+</div>
+
+<script>
+// ============ DATA ============
+const NLM_PAIRS = [
+  // 旅行攻略类（在下一节单独对比，此处不显示）
+  {topic:'JR Pass 使用体验', orig_title:'JR Pass个人使用体验｜东京广域｜关西广域｜北海道', nlm_title:'JR Pass个人使用体验（NotebookLM总结版）', orig_date:'2025-08-07', nlm_date:'2026-03-20', orig_read:5403, nlm_read:1445, orig_fwd:344, nlm_fwd:113, read_ratio:0.27, fwd_ratio:0.33, category:'tip'},
+  {topic:'东京地铁指南', orig_title:'Japan Travel Tips｜一些在东京坐"地铁"的个人经验和建议', nlm_title:'东京"地铁"生存指南（NotebookLM总结版）', orig_date:'2025-11-26', nlm_date:'2026-04-04', orig_read:3202, nlm_read:1158, orig_fwd:184, nlm_fwd:115, read_ratio:0.36, fwd_ratio:0.63, category:'tip'},
+  {topic:'买机票经验（北京出发）', orig_title:'Japan Travel Tips｜一些买机票的个人经验和建议（北京出发）', nlm_title:'机票降本指南（NotebookLM总结版）', orig_date:'2025-11-11', nlm_date:'2026-03-25', orig_read:14438, nlm_read:73, orig_fwd:740, nlm_fwd:8, read_ratio:0.01, fwd_ratio:0.01, category:'tip'},
+  // 旅行游记类（在 NotebookLM 总结版 vs 原版部分显示）
+  {topic:'濑户内海跳岛', orig_title:'冈山·香川·2025·夏｜在濑户内海艺术祭间歇期的「跳岛」之行', nlm_title:'濑户内海跳岛4日游（NotebookLM总结版）', orig_date:'2025-09-15', nlm_date:'2026-02-09', orig_read:181, nlm_read:501, orig_fwd:20, nlm_fwd:48, read_ratio:2.77, fwd_ratio:2.4, category:'travel'},
+  {topic:'广岛旅行', orig_title:'广岛·2024·夏｜山海之间', nlm_title:'广岛·尾道4日游（NotebookLM总结版）', orig_date:'2024-09-21', nlm_date:'2026-02-13', orig_read:192, nlm_read:504, orig_fwd:12, nlm_fwd:38, read_ratio:2.62, fwd_ratio:3.17, category:'travel'},
+  {topic:'北海道跨年', orig_title:'北海道·2025·冬｜雪国的跨年行', nlm_title:'北海道跨年5日游（NotebookLM总结版）', orig_date:'2025-01-18', nlm_date:'2026-02-18', orig_read:346, nlm_read:184, orig_fwd:13, nlm_fwd:11, read_ratio:0.53, fwd_ratio:0.85, category:'travel'},
+  {topic:'英国旅行·2023', orig_title:'英国·2023·秋｜延迟3年的大不列颠', nlm_title:'🇬🇧 大英初印象·2023（NotebookLM总结版）', orig_date:'2023-10-25', nlm_date:'2026-03-06', orig_read:252, nlm_read:209, orig_fwd:2, nlm_fwd:15, read_ratio:0.83, fwd_ratio:7.5, category:'travel'},
+  {topic:'英国旅行·2024', orig_title:'伦敦·2024·春｜有时天晴有时雨', nlm_title:'英伦十日·2024（NotebookLM总结版）', orig_date:'2024-04-15', nlm_date:'2026-03-18', orig_read:189, nlm_read:245, orig_fwd:8, nlm_fwd:22, read_ratio:1.30, fwd_ratio:2.75, category:'travel'},
+  {topic:'新加坡', orig_title:'新加坡·2025·夏｜就在日落以后', nlm_title:'🇸🇬 狮城夏日漫游记（NotebookLM总结版）', orig_date:'2025-06-13', nlm_date:'2026-03-14', orig_read:144, nlm_read:94, orig_fwd:7, nlm_fwd:5, read_ratio:0.65, fwd_ratio:0.71, category:'travel'},
+  {topic:'富山旅行', orig_title:'富山·2025·春｜山海之间 - Episode II', nlm_title:'北陆地区·富山4日游（NotebookLM总结版）', orig_date:'2025-04-28', nlm_date:'2026-02-11', orig_read:618, nlm_read:1003, orig_fwd:66, nlm_fwd:86, read_ratio:1.62, fwd_ratio:1.3, category:'travel'},
+  {topic:'纽约旅行', orig_title:'纽约·2025·秋｜在哪儿都有星条旗', nlm_title:'Welcome to NY（NotebookLM总结版）', orig_date:'2025-10-20', nlm_date:'2026-03-28', orig_read:167, nlm_read:312, orig_fwd:11, nlm_fwd:28, read_ratio:1.87, fwd_ratio:2.55, category:'travel'}
+];
+
+const YR_PUB = [
+  {年份:2020,文章数:3,均阅读:129.3},{年份:2021,文章数:73,均阅读:81.7},
+  {年份:2022,文章数:114,均阅读:44.6},{年份:2023,文章数:111,均阅读:41.7},
+  {年份:2024,文章数:54,均阅读:50.5},{年份:2025,文章数:63,均阅读:726.2},
+  {年份:2026,文章数:42,均阅读:243.3}
+];
+
+const TAG_STATS = [
+  {标签:'旅行游记（攻略类）',文章数:8,总阅读:27785,均阅读:3473.1,最高阅读:14438,最低阅读:73,中位数:1158},
+  {标签:'美食烹饪',文章数:38,总阅读:18230,均阅读:479.7,最高阅读:6712,最低阅读:23,中位数:280},
+  {标签:'旅行游记',文章数:38,总阅读:10591,均阅读:278.7,最高阅读:1003,最低阅读:30,中位数:189},
+  {标签:'Agentic产品转型',文章数:8,总阅读:1595,均阅读:199.4,最高阅读:1093,最低阅读:45,中位数:156},
+  {标签:'年度总结',文章数:16,总阅读:960,均阅读:60.0,最高阅读:267,最低阅读:12,中位数:48},
+  {标签:'摄影图集',文章数:110,总阅读:5347,均阅读:48.6,最高阅读:380,最低阅读:3,中位数:28},
+  {标签:'VoE',文章数:38,总阅读:1822,均阅读:47.9,最高阅读:289,最低阅读:8,中位数:35},
+  {标签:'MarTech/AI读书笔记',文章数:204,总阅读:8419,均阅读:41.3,最高阅读:380,最低阅读:2,中位数:22}
+];
+
+const SUBTYPE = [
+  {type:'旅行攻略·原创',篇数:4,均阅读:6252.2,均转发:352.5},
+  {type:'旅行攻略·AI版',篇数:4,均阅读:694.0,均转发:60.2},
+  {type:'美食·原创',篇数:38,均阅读:479.7,均转发:15.7},
+  {type:'旅行游记·AI版',篇数:10,均阅读:401.8,均转发:26.7},
+  {type:'旅行游记·原创',篇数:28,均阅读:234.8,均转发:9.9},
+  {type:'其他',篇数:376,均阅读:48.3,均转发:1.1}
+];
+
+const TRAVEL_TIP_DETAIL = [
+  {title:'买机票经验（北京出发）',read:14438,ai:'N'},
+  {title:'JR Pass使用体验',read:5403,ai:'N'},
+  {title:'东京地铁指南',read:3202,ai:'N'},
+  {title:'濑户内海规划Agent',read:1966,ai:'N'},
+  {title:'JR Pass（NLM版）',read:1445,ai:'Y'},
+  {title:'东京地铁生存指南（NLM）',read:1158,ai:'Y'},
+  {title:'日本机场实测（NLM）',read:100,ai:'Y'},
+  {title:'机票降本指南（NLM）',read:73,ai:'Y'},
+];
+
+const MONTHLY_SUB = [
+  {m:'2024-01',新关注:0,累积:415},{m:'2024-02',新关注:4,累积:419},{m:'2024-03',新关注:3,累积:422},
+  {m:'2024-04',新关注:2,累积:424},{m:'2024-05',新关注:2,累积:426},{m:'2024-06',新关注:3,累积:429},
+  {m:'2024-07',新关注:3,累积:432},{m:'2024-08',新关注:6,累积:438},{m:'2024-09',新关注:3,累积:441},
+  {m:'2024-10',新关注:43,累积:484},{m:'2024-11',新关注:33,累积:517},{m:'2024-12',新关注:8,累积:525},
+  {m:'2025-01',新关注:5,累积:530},{m:'2025-02',新关注:4,累积:534},{m:'2025-03',新关注:11,累积:545},
+  {m:'2025-04',新关注:12,累积:557},{m:'2025-05',新关注:24,累积:581},{m:'2025-06',新关注:3,累积:584},
+  {m:'2025-07',新关注:5,累积:589},{m:'2025-08',新关注:32,累积:621},{m:'2025-09',新关注:28,累积:649},
+  {m:'2025-10',新关注:43,累积:692},{m:'2025-11',新关注:231,累积:923},{m:'2025-12',新关注:123,累积:1046},
+  {m:'2026-01',新关注:43,累积:1089},{m:'2026-02',新关注:24,累积:1113},{m:'2026-03',新关注:76,累积:1189},{m:'2026-04',新关注:45,累积:1234}
+];
+
+const MONTHLY_READ = [
+  {m:'2024-01',阅读:0},{m:'2024-02',阅读:231},{m:'2024-03',阅读:183},{m:'2024-04',阅读:133},
+  {m:'2024-05',阅读:183},{m:'2024-06',阅读:310},{m:'2024-07',阅读:357},{m:'2024-08',阅读:476},
+  {m:'2024-09',阅读:401},{m:'2024-10',阅读:359},{m:'2024-11',阅读:429},{m:'2024-12',阅读:482},
+  {m:'2025-01',阅读:657},{m:'2025-02',阅读:210},{m:'2025-03',阅读:331},{m:'2025-04',阅读:921},
+  {m:'2025-05',阅读:108},{m:'2025-06',阅读:243},{m:'2025-07',阅读:352},{m:'2025-08',阅读:5984},
+  {m:'2025-09',阅读:2346},{m:'2025-10',阅读:1790},{m:'2025-11',阅读:30633},{m:'2025-12',阅读:2173},
+  {m:'2026-01',阅读:1299},{m:'2026-02',阅读:3850},{m:'2026-03',阅读:3562},{m:'2026-04',阅读:1509}
+];
+
+const YR_SUB = [
+  {年份:2020,新关注:16,取消关注:0,净增:16,年末粉丝:23},
+  {年份:2021,新关注:137,取消关注:10,净增:127,年末粉丝:150},
+  {年份:2022,新关注:131,取消关注:11,净增:120,年末粉丝:270},
+  {年份:2023,新关注:77,取消关注:17,净增:60,年末粉丝:330},
+  {年份:2024,新关注:105,取消关注:27,净增:78,年末粉丝:408},
+  {年份:2025,新关注:521,取消关注:27,净增:494,年末粉丝:902},
+  {年份:2026,新关注:188,取消关注:9,净增:179,年末粉丝:1081}
+];
+
+const TOP15 = [
+  {date:'2025-11-11',title:'Japan Travel Tips｜一些买机票的个人经验和建议（北京出发）',read:14438,like:116,fwd:740,tag:'旅行游记（攻略类）',ai:'N'},
+  {date:'2025-11-15',title:'厨房大作战｜白菜炖豆腐（vegan版）',read:6712,like:55,fwd:311,tag:'美食烹饪',ai:'N'},
+  {date:'2025-08-07',title:'JR Pass个人使用体验｜东京广域｜关西广域｜北海道',read:5403,like:82,fwd:344,tag:'旅行游记（攻略类）',ai:'N'},
+  {date:'2025-11-20',title:'厨房大作战｜煎鸡腿排（快手版）',read:5125,like:66,fwd:164,tag:'美食烹饪',ai:'N'},
+  {date:'2025-11-26',title:'Japan Travel Tips｜一些在东京坐"地铁"的个人经验和建议',read:3202,like:50,fwd:184,tag:'旅行游记（攻略类）',ai:'N'},
+  {date:'2025-09-30',title:'如何制定一个可行的濑户内海跳岛旅行计划｜旅行规划Agent的高阶试炼',read:1966,like:20,fwd:142,tag:'旅行游记（攻略类）',ai:'N'},
+  {date:'2026-03-20',title:'JR Pass个人使用体验（NotebookLM总结版）',read:1445,like:22,fwd:113,tag:'旅行游记（攻略类）',ai:'Y'},
+  {date:'2025-10-15',title:'厨房大作战｜西班牙早餐（lite版）',read:1363,like:6,fwd:23,tag:'美食烹饪',ai:'N'},
+  {date:'2026-04-04',title:'东京"地铁"生存指南（NotebookLM总结版）',read:1158,like:18,fwd:115,tag:'旅行游记（攻略类）',ai:'Y'},
+  {date:'2026-03-15',title:'对话｜AI时代的软件公司，还会存在吗？',read:1093,like:9,fwd:111,tag:'Agentic产品转型',ai:'Y'},
+  {date:'2026-02-11',title:'北陆地区·富山4日游（NotebookLM总结版）',read:1003,like:7,fwd:86,tag:'旅行游记',ai:'Y'},
+  {date:'2026-02-22',title:'Japan Travel Experiences｜那些消失在2020年的铝瓶可乐',read:908,like:11,fwd:14,tag:'旅行游记',ai:'Y'},
+  {date:'2025-11-09',title:'厨房大作战｜白菜炖豆腐',read:859,like:6,fwd:49,tag:'美食烹饪',ai:'N'},
+  {date:'2025-12-30',title:'Japan Travel Experiences｜"盖章"的初体验',read:767,like:15,fwd:32,tag:'旅行游记',ai:'N'},
+  {date:'2025-04-28',title:'富山·2025·春｜山海之间 - Episode II',read:618,like:14,fwd:66,tag:'旅行游记',ai:'N'}
+];
+
+// ============ CHART CONFIG ============
+const C = {
+  blue:'#4f6ef7', blue_t:'rgba(79,110,247,0.15)',
+  green:'#26b88a', green_t:'rgba(38,184,138,0.15)',
+  orange:'#f5a623', orange_t:'rgba(245,166,35,0.15)',
+  red:'#e8404a', red_t:'rgba(232,64,74,0.15)',
+  pink:'#f06292', pink_t:'rgba(240,98,146,0.15)',
+  purple:'#7c4dff', purple_t:'rgba(124,77,255,0.15)',
+  gray:'#9499ab', gray_t:'rgba(148,153,171,0.15)',
+  text:'#1a1d2e', text2:'#6b7080', border:'#e4e8f0',
+  grid:'rgba(228,232,240,0.8)'
+};
+
+Chart.defaults.color = C.text2;
+Chart.defaults.borderColor = C.border;
+Chart.defaults.font.family = "'PingFang SC','Helvetica Neue',Arial,sans-serif";
+Chart.defaults.font.size = 12;
+
+const scalesXY = {
+  x:{grid:{color:C.grid},ticks:{color:C.text2}},
+  y:{grid:{color:C.grid},ticks:{color:C.text2}}
+};
+
+// --- NLM Cards - NotebookLM summary style (travel category only, tips shown separately) ---
+const travelPairs = NLM_PAIRS.filter(p => p.category === 'travel');
+const winPairs = travelPairs.filter(p => p.read_ratio >= 1).sort((a,b)=>b.read_ratio-a.read_ratio);
+const losePairs = travelPairs.filter(p => p.read_ratio < 1).sort((a,b)=>a.read_ratio-b.read_ratio);
+
+function buildNLMCard(p) {
+  const ratio = p.read_ratio;
+  const isUp = ratio >= 1;
+  const ratioNum = isUp ? `▲ ${ratio}×` : `▼ ${(1/ratio).toFixed(2)}×`;
+  const noteText = isUp
+    ? `NLM版更高`
+    : `NLM版为原版的 ${(ratio*100).toFixed(0)}%`;
+  const origDate = p.orig_date ? `<span class="nlm-card-meta">原版 ${p.orig_date} · NLM版 ${p.nlm_date}</span>` : '';
+
+  return `<div class="nlm-card">
+    <div class="nlm-card-topic">
+      ${p.topic}
+      ${origDate}
+    </div>
+    <div class="nlm-card-vs">
+      <div class="nlm-vs-label">阅读量</div>
+      <div class="nlm-vs-values">
+        <div class="nlm-val">
+          <span class="nlm-val-num orig">${p.orig_read.toLocaleString()}</span>
+          <span class="nlm-val-lbl">原版</span>
+        </div>
+        <span class="nlm-vs-sep">vs</span>
+        <div class="nlm-val">
+          <span class="nlm-val-num nlm">${p.nlm_read.toLocaleString()}</span>
+          <span class="nlm-val-lbl">NLM版</span>
+        </div>
+      </div>
+    </div>
+    <div class="nlm-card-ratio">
+      <div class="nlm-ratio-num ${isUp ? 'up' : 'down'}">${ratioNum}</div>
+      <div class="nlm-ratio-lbl">对比</div>
+      <div class="nlm-ratio-note">${noteText}</div>
+    </div>
+  </div>`;
+}
+
+let nlmHTML2 = `<div class="nlm-pair-group">`;
+if(winPairs.length) {
+  nlmHTML2 += `<div class="nlm-group-label win">NLM版超越原版（${winPairs.length}组）</div>`;
+  winPairs.forEach(p => nlmHTML2 += buildNLMCard(p));
+}
+nlmHTML2 += `</div><div class="nlm-pair-group">`;
+if(losePairs.length) {
+  nlmHTML2 += `<div class="nlm-group-label lose">原版领先NLM版（${losePairs.length}组）</div>`;
+  losePairs.forEach(p => nlmHTML2 += buildNLMCard(p));
+}
+nlmHTML2 += `</div>`;
+document.getElementById('nlmCardsContainer').innerHTML = nlmHTML2;
+
+// --- Travel Tip Compare Cards (NLM style for tip category only) ---
+const tipComparePairs = NLM_PAIRS.filter(p => p.category === 'tip').sort((a, b) => b.orig_read - a.orig_read);
+
+function buildTipCompareCard(p) {
+  const ratio = p.read_ratio;
+  const isUp = ratio >= 1;
+  const ratioNum = isUp ? `▲ ${ratio}×` : `▼ ${(ratio*100).toFixed(0)}%`;
+  const noteText = isUp ? 'NLM版更高' : `NLM版为原版的 ${(ratio*100).toFixed(0)}%`;
+
+  return `<div class="nlm-card">
+    <div class="nlm-card-topic">
+      ${p.topic}
+      <div class="nlm-card-meta">原版 ${p.orig_date} · NLM版 ${p.nlm_date}</div>
+    </div>
+    <div class="nlm-card-vs">
+      <div class="nlm-vs-label">阅读量</div>
+      <div class="nlm-vs-values">
+        <div class="nlm-val">
+          <span class="nlm-val-num orig">${p.orig_read.toLocaleString()}</span>
+          <span class="nlm-val-lbl">原版</span>
+        </div>
+        <span class="nlm-vs-sep">vs</span>
+        <div class="nlm-val">
+          <span class="nlm-val-num nlm">${p.nlm_read.toLocaleString()}</span>
+          <span class="nlm-val-lbl">NLM版</span>
+        </div>
+      </div>
+    </div>
+    <div class="nlm-card-ratio">
+      <div class="nlm-ratio-num ${isUp ? 'up' : 'down'}">${ratioNum}</div>
+      <div class="nlm-ratio-lbl">对比</div>
+      <div class="nlm-ratio-note">${noteText}</div>
+    </div>
+  </div>`;
+}
+
+let tipCompareHTML = '';
+tipComparePairs.forEach(p => tipCompareHTML += buildTipCompareCard(p));
+document.getElementById('tipCompareCards').innerHTML = tipCompareHTML;
+
+// --- Yr Read (bubble variant: 2025 highlighted, bubble size = article count) ---
+new Chart(document.getElementById('chartYrRead'), {
+  type:'bar',
+  data:{
+    labels: YR_PUB.map(d=>`${d.年份}（${d.文章数}篇）`),
+    datasets:[{
+      label:'均阅读',
+      data: YR_PUB.map(d=>d.均阅读),
+      backgroundColor: YR_PUB.map((d,i)=>{
+        if(i===5) return C.green_t;
+        if(d.均阅读 > 200) return C.blue_t;
+        return C.gray_t;
+      }),
+      borderColor: YR_PUB.map((d,i)=>{
+        if(i===5) return C.green;
+        if(d.均阅读 > 200) return C.blue;
+        return C.gray;
+      }),
+      borderWidth:1.5, borderRadius:5
+    }]
+  },
+  options:{responsive:true,maintainAspectRatio:true,
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        callbacks:{
+          label: items => {
+            const d = YR_PUB[items.dataIndex];
+            return `均阅读 ${d.均阅读}`;
+          }
+        }
+      }
+    },
+    scales:scalesXY
+  }
+});
+
+// --- Efficiency Tier Cards JS ---
+const tierHigh = TAG_STATS.filter(d=>d.均阅读>=300).sort((a,b)=>b.均阅读-a.均阅读);
+const tierMid  = TAG_STATS.filter(d=>d.均阅读>=100 && d.均阅读<300).sort((a,b)=>b.均阅读-a.均阅读);
+const tierLow  = TAG_STATS.filter(d=>d.均阅读<100).sort((a,b)=>b.均阅读-a.均阅读);
+
+function effColor(v) {
+  if(v>=300) return 'green';
+  if(v>=100) return 'orange';
+  return 'red';
+}
+
+function buildEffTier(label, cls, items) {
+  if(!items.length) return '';
+  let html = `<div class="eff-tier"><div class="eff-tier-label ${cls}">${label}</div><div class="eff-cards">`;
+  items.forEach(d => {
+    const vc = effColor(d.均阅读);
+    html += `<div class="eff-card">
+      <div class="eff-card-name">${d.标签}</div>
+      <div class="eff-card-stats">
+        <div class="eff-stat">
+          <span class="eff-stat-val ${vc}">${d.均阅读.toLocaleString()}</span>
+          <span class="eff-stat-lbl">均阅读</span>
+        </div>
+        <div class="eff-stat">
+          <span class="eff-stat-val">${d.文章数}</span>
+          <span class="eff-stat-lbl">篇</span>
+        </div>
+      </div>
+      <div class="eff-card-range">
+        <div class="eff-range-item"><span class="eff-range-label">最高</span><span class="eff-range-val">${d.最高阅读.toLocaleString()}</span></div>
+        <div class="eff-range-item"><span class="eff-range-label">中位</span><span class="eff-range-val">${d.中位数.toLocaleString()}</span></div>
+        <div class="eff-range-item"><span class="eff-range-label">最低</span><span class="eff-range-val">${d.最低阅读.toLocaleString()}</span></div>
+      </div>
+    </div>`;
+  });
+  return html + `</div></div>`;
+}
+
+document.getElementById('effCardsContainer').innerHTML =
+  buildEffTier('高效区（均阅读 ≥ 300）', 'high', tierHigh) +
+  buildEffTier('中效区（均阅读 100~299）', 'mid', tierMid) +
+  buildEffTier('低效区（均阅读 < 100）', 'low', tierLow);
+
+// --- Fan Growth (simplified: just cumulative + monthly new) ---
+new Chart(document.getElementById('chartFanGrowth'), {
+  type:'line',
+  data:{
+    labels: MONTHLY_SUB.map(d=>d.m),
+    datasets:[
+      {label:'累积粉丝', data:MONTHLY_SUB.map(d=>d.累积), borderColor:C.blue, backgroundColor:C.blue_t, fill:true, tension:0.35, pointRadius:2, borderWidth:2, yAxisID:'y'},
+      {label:'月新增', data:MONTHLY_SUB.map(d=>d.新关注), borderColor:C.green, backgroundColor:'transparent', tension:0.35, pointRadius:2, borderWidth:1.5, yAxisID:'y2'}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'top',labels:{boxWidth:12,padding:14}}},
+    scales:{
+      x:{grid:{color:C.grid},ticks:{maxTicksLimit:10,color:C.text2}},
+      y:{grid:{color:C.grid},ticks:{color:C.blue},title:{display:true,text:'累积粉丝',color:C.blue}},
+      y2:{position:'right',grid:{drawOnChartArea:false},ticks:{color:C.green},title:{display:true,text:'月新增',color:C.green}}
+    }
+  }
+});
+
+// --- AI Compare: 旅行游记（非攻略）---
+new Chart(document.getElementById('chartAITravel'), {
+  type:'bar',
+  data:{
+    labels:['均阅读','均转发'],
+    datasets:[
+      {label:'原创（28篇）', data:[234.8, 9.9], backgroundColor:C.gray_t, borderColor:C.gray, borderWidth:1.5, borderRadius:7},
+      {label:'AI辅助（10篇）', data:[401.8, 26.7], backgroundColor:C.green_t, borderColor:C.green, borderWidth:1.5, borderRadius:7}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:10,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y}`}}
+    },
+    scales:{
+      x:{grid:{color:C.grid},ticks:{color:C.text2}},
+      y:{grid:{color:C.grid},ticks:{color:C.text2},beginAtZero:true}
+    }
+  }
+});
+
+// --- AI Compare: 旅行攻略（攻略类）---
+new Chart(document.getElementById('chartAITip'), {
+  type:'bar',
+  data:{
+    labels:['均阅读','均转发'],
+    datasets:[
+      {label:'原创（4篇）', data:[6252.2, 352.5], backgroundColor:C.orange_t, borderColor:C.orange, borderWidth:1.5, borderRadius:7},
+      {label:'AI辅助（4篇）', data:[694.0, 60.2], backgroundColor:C.gray_t, borderColor:C.gray, borderWidth:1.5, borderRadius:7}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:10,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y}`}}
+    },
+    scales:{
+      x:{grid:{color:C.grid},ticks:{color:C.text2}},
+      y:{grid:{color:C.grid},ticks:{color:C.text2},beginAtZero:true}
+    }
+  }
+});
+
+// --- 对话系列 Table ---
+const DIALOGUE_DATA = [
+  {date:'2026-03-15',title:'对话｜AI时代的软件公司，还会存在吗？',read:1093,like:9,fwd:111,tag:'Agentic产品转型'},
+  {date:'2026-03-31',title:'对话｜机器学习模型在营销自动化中的真实处境（以及一个更大的误区）',read:141,like:3,fwd:18,tag:'Agentic产品转型'},
+  {date:'2026-03-13',title:'对话｜和Claude协同设计产品：一个PM的实战复盘',read:110,like:4,fwd:5,tag:'Agentic产品转型'},
+  {date:'2026-04-01',title:'对话｜数字广告已经进入目标驱动优化的时代，CRM为什么还停留在规则配置的时代？',read:72,like:3,fwd:6,tag:'Agentic产品转型'},
+  {date:'2026-03-09',title:'对话｜概念满天飞的情况下，Agentic营销平台的落地逻辑是什么？',read:66,like:3,fwd:4,tag:'Agentic产品转型'},
+  {date:'2026-03-16',title:'对话｜放弃微操，拥抱Harness Engineering：当AI接管营销，业务人员到底该干什么？',read:50,like:4,fwd:3,tag:'Agentic产品转型'},
+  {date:'2026-02-14',title:'对话｜营销画布的黄昏与AI Native的黎明：CDP+MA产品的代际跨越',read:44,like:4,fwd:3,tag:'Agentic产品转型'},
+  {date:'2026-03-02',title:'对话｜AI能做决策，但谁来执行？Agentic营销平台的真问题',read:19,like:2,fwd:2,tag:'Agentic产品转型'}
+];
+
+const dtbl = document.getElementById('dialogueTable');
+const dmaxR = Math.max(...DIALOGUE_DATA.map(d=>d.read));
+let dHTML = `<thead><tr><th>#</th><th>发布日期</th><th>文章标题</th><th>阅读</th><th>点赞</th><th>转发</th></tr></thead><tbody>`;
+DIALOGUE_DATA.forEach((d,i)=>{
+  const pct = Math.round(d.read/dmaxR*72);
+  dHTML += `<tr>
+    <td><span class="rank">${i+1}</span></td>
+    <td style="color:${C.text2};white-space:nowrap;font-size:12px">${d.date}</td>
+    <td style="font-size:13px;max-width:400px">${d.title}</td>
+    <td><span class="bar-mini" style="width:${pct}px"></span><strong>${d.read.toLocaleString()}</strong></td>
+    <td style="color:${C.text2}">${d.like}</td>
+    <td style="color:${C.green}">${d.fwd}</td>
+  </tr>`;
+});
+dHTML += '</tbody>';
+dtbl.innerHTML = dHTML;
+
+// --- Top 15 Table ---
+const tbl = document.getElementById('topTable');
+const badgeCls = t => {
+  if(t.includes('攻略'))return 'b-tip';
+  if(t.includes('美食'))return 'b-food';
+  if(t.includes('旅行'))return 'b-travel';
+  if(t.includes('MarTech')||t.includes('AI读书'))return 'b-mkt';
+  if(t.includes('Agentic'))return 'b-mkt';
+  if(t.includes('摄影'))return 'b-photo';
+  return 'b-other';
+};
+const maxR = Math.max(...TOP15.map(d=>d.read));
+let tHTML = `<thead><tr><th>#</th><th>发布日期</th><th>文章标题</th><th>标签</th><th>创作</th><th>阅读</th><th>转发</th></tr></thead><tbody>`;
+TOP15.forEach((d,i)=>{
+  const pct = Math.round(d.read/maxR*72);
+  tHTML += `<tr>
+    <td><span class="rank${i<3?' top3':''}">${i+1}</span></td>
+    <td style="color:${C.text2};white-space:nowrap;font-size:12px">${d.date}</td>
+    <td style="font-size:13px;max-width:340px">${d.title}</td>
+    <td><span class="badge ${badgeCls(d.tag)}">${d.tag}</span></td>
+    <td>${d.ai==='Y'?'<span class="badge b-ai">AI辅助</span>':'<span style="font-size:11px;color:'+C.text2+'">原创</span>'}</td>
+    <td><span class="bar-mini" style="width:${pct}px"></span><strong>${d.read.toLocaleString()}</strong></td>
+    <td style="color:${C.text2}">${d.fwd}</td>
+  </tr>`;
+});
+tHTML += '</tbody>';
+tbl.innerHTML = tHTML;
+</script>
+</body>
+</html>
