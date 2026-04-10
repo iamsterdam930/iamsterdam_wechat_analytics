@@ -276,6 +276,7 @@
   }
   .callout strong { color: var(--text); }
 
+  /* ===== TABLET (≤900px) ===== */
   @media (max-width: 900px) {
     .chart-grid, .chart-grid.three, .insights-grid { grid-template-columns: 1fr; }
     .chart-card.full, .insight-card.full, .chart-card.w3 { grid-column: 1; }
@@ -287,8 +288,118 @@
     .nlm-card-ratio { display: flex; align-items: center; gap: 8px; justify-content: center; }
     .nlm-ratio-note { display: none; }
   }
+
+  /* ===== MOBILE (≤600px) ===== */
   @media (max-width: 600px) {
-    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    /* 基础布局 */
+    body { font-size: 14px; }
+    .container { padding: 16px 12px 40px; }
+
+    /* 顶部 Header */
+    .header { padding: 24px 16px 20px; }
+    .header h1 { font-size: 20px; letter-spacing: -0.3px; }
+    .header p { font-size: 13px; }
+    .header-eyebrow { font-size: 10px; letter-spacing: 1px; margin-bottom: 10px; }
+    .header-meta { gap: 12px; margin-top: 14px; }
+    .header-meta span { font-size: 12px; }
+
+    /* KPI 卡片：2列 */
+    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+    .kpi-card { padding: 14px 12px; }
+    .kpi-value { font-size: 22px; }
+    .kpi-label { font-size: 10px; margin-bottom: 6px; }
+    .kpi-sub { font-size: 10px; line-height: 1.4; }
+    .kpi-extra { font-size: 10px; }
+
+    /* Section */
+    .section { margin-bottom: 32px; }
+    .section-header { margin-bottom: 14px; gap: 8px; flex-wrap: wrap; }
+    .section-title { font-size: 15px; }
+    .section-desc { font-size: 12px; width: 100%; margin-top: 2px; }
+
+    /* Callout / Insight block */
+    .callout { padding: 12px 14px; font-size: 12px; }
+    .insight-block { padding: 14px 16px; font-size: 13px; }
+
+    /* Insight cards */
+    .insights-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
+    .insight-card { padding: 16px; }
+    .insight-title { font-size: 14px; }
+    .insight-body { font-size: 12px; line-height: 1.7; }
+    .insight-tag { font-size: 10px; padding: 2px 8px; margin-bottom: 8px; }
+
+    /* Chart cards */
+    .chart-card { padding: 14px 12px; }
+    .chart-title { font-size: 12px; margin-bottom: 12px; }
+    .chart-grid { gap: 12px; }
+
+    /* NLM 对比卡片：手机端改为竖排清晰版 */
+    .nlm-card {
+      grid-template-columns: 1fr;
+      padding: 14px 16px;
+      gap: 10px;
+      text-align: left;
+    }
+    .nlm-card-topic { font-size: 13px; }
+    .nlm-card-meta { font-size: 10px; }
+    .nlm-card-vs {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 16px;
+      align-items: center;
+    }
+    .nlm-vs-label { display: none; }
+    .nlm-val-num { font-size: 18px; }
+    .nlm-card-ratio {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+    }
+    .nlm-ratio-num { font-size: 20px; }
+    .nlm-ratio-lbl { display: none; }
+    .nlm-ratio-note { display: block; font-size: 10px; max-width: none; }
+    .nlm-group-label { font-size: 10px; padding: 3px 10px; }
+
+    /* 效率卡片 */
+    .eff-cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .eff-card { padding: 12px; }
+    .eff-card-name { font-size: 12px; margin-bottom: 8px; }
+    .eff-stat-val { font-size: 14px; }
+    .eff-stat-lbl { font-size: 9px; }
+    .eff-card-range { font-size: 10px; gap: 6px; flex-wrap: wrap; }
+
+    /* 表格：允许横向滚动，重要列不折行 */
+    .chart-card:has(.top-table),
+    .chart-card:has(.compare-table) {
+      padding: 14px 0;
+      overflow: hidden;
+    }
+    .top-table, .compare-table {
+      font-size: 12px;
+      min-width: 520px;
+    }
+    .top-table th, .top-table td,
+    .compare-table th, .compare-table td {
+      padding: 8px 10px;
+    }
+    /* 表格横向滚动容器 */
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+    }
+    .badge { font-size: 9px; padding: 1px 5px; }
+    .bar-mini { display: none; }
+
+    /* AI 对比两图单列 */
+    #aiCompareGrid { grid-template-columns: 1fr !important; }
+
+    /* 粉丝趋势图高度收窄 */
+    #chartFanGrowth, #chartYrRead { max-height: 200px; }
+
+    /* Footer */
+    .footer { font-size: 11px; padding: 20px 16px; }
   }
 </style>
 </head>
@@ -511,7 +622,7 @@
       旅行<span class="highlight">攻略</span>中，原创是 AI 版的 <strong>9 倍</strong>——真正的爆款来自一手体验与独家视角，AI 是复用工具，不是爆款发动机；
       MarTech/AI读书笔记不参与此类对比，该类主要靠朋友圈传播，AI 辅助节省的是创作时间而非提升传播效能。
     </div>
-    <div class="chart-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="chart-grid" id="aiCompareGrid" style="grid-template-columns:1fr 1fr;">
       <div class="chart-card">
         <div class="chart-title">旅行游记（非攻略类）<span style="font-size:11px;color:#9499ab;margin-left:6px">原创28篇 vs AI辅助10篇</span></div>
         <canvas id="chartAITravel" height="200"></canvas>
@@ -529,7 +640,9 @@
       <div class="section-title">历史 Top 15 文章</div>
     </div>
     <div class="chart-card">
-      <table class="top-table" id="topTable"></table>
+      <div class="table-scroll">
+        <table class="top-table" id="topTable"></table>
+      </div>
     </div>
   </div>
 
@@ -540,7 +653,9 @@
       <div class="section-desc">聚焦 AI 与营销/产品领域的深度对谈，共 8 篇</div>
     </div>
     <div class="chart-card">
-      <table class="top-table" id="dialogueTable"></table>
+      <div class="table-scroll">
+        <table class="top-table" id="dialogueTable"></table>
+      </div>
     </div>
   </div>
 
